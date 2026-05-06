@@ -1,0 +1,6 @@
+@echo off
+echo Installing dependencies...
+pip install -r "%~dp0requirements.txt" --quiet
+echo Starting app...
+python -m streamlit run "%~dp0app.py"
+pause
