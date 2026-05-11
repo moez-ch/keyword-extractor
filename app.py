@@ -61,7 +61,8 @@ if st.button("Extract", type="primary", disabled=not can_run):
         if keywords:
             mask &= make_mask(df, keywords)
         if states:
-            mask &= make_mask(df, states)
+            pattern = "|".join(states)
+            mask &= df.iloc[:, 2].astype(str).str.contains(pattern, case=False, na=False, regex=True)
         filtered = df[mask].copy()
 
     if filtered.empty:
