@@ -62,7 +62,9 @@ if st.button("Extract", type="primary", disabled=not can_run):
             mask &= make_mask(df, keywords)
         if states:
             pattern = "|".join(states)
-            mask &= df.iloc[:, 2].astype(str).str.contains(pattern, case=False, na=False, regex=True)
+            il_col = next((c for c in df.columns if str(c).strip().lower() in ("il", "İl", "il", "state", "şehir", "sehir", "province")), None)
+            state_series = df[il_col] if il_col else df.iloc[:, 2]
+            mask &= state_series.astype(str).str.contains(pattern, case=False, na=False, regex=True)
         filtered = df[mask].copy()
 
     if filtered.empty:
