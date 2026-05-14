@@ -23,12 +23,14 @@ with col_kw:
     )
 
 with col_st:
-    st.markdown("**State**")
-    state_raw = st.text_input(
-        "State",
-        placeholder="e.g. Istanbul, Ankara",
-        label_visibility="collapsed",
-    )
+    st.markdown("**Search in column**")
+    if uploaded_file:
+        preview = pd.read_excel(uploaded_file, nrows=0, dtype=str)
+        uploaded_file.seek(0)
+        col_options = ["— All columns —"] + list(preview.columns)
+    else:
+        col_options = ["— All columns —"]
+    selected_col = st.selectbox("Column", col_options, label_visibility="collapsed")
 
 # ── Output filename ───────────────────────────────────────────────────────────
 output_name = st.text_input("Output file name", value="filtered_companies.xlsx")
@@ -46,8 +48,7 @@ def make_mask(df, terms):
     ).any(axis=1)
 
 keywords = parse(keywords_raw)
-states   = parse(state_raw)
-can_run  = uploaded_file and (keywords or states)
+can_run  = uploaded_file and keywords
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if st.button("Extract", type="primary", disabled=not can_run):
@@ -57,14 +58,12 @@ if st.button("Extract", type="primary", disabled=not can_run):
     st.info(f"Loaded **{len(df):,} rows** × {len(df.columns)} columns")
 
     with st.spinner("Filtering..."):
-        mask = pd.Series([True] * len(df), index=df.index)
-        if keywords:
-            mask &= make_mask(df, keywords)
-        if states:
-            pattern = "|".join(states)
-            il_col = next((c for c in df.columns if str(c).strip().lower() in ("il", "İl", "il", "state", "şehir", "sehir", "province")), None)
-            state_series = df[il_col] if il_col else df.iloc[:, 2]
-            mask &= state_series.astype(str).str.contains(pattern, case=False, na=False, regex=True)
+        if selected_col and selected_col != "— All columns —":
+            mask = df[selected_col].astype(str).str.contains(
+                "|".join(keywords), case=False, na=False, regex=True
+            )
+        else:
+            mask = make_mask(df, keywords)
         filtered = df[mask].copy()
 
     if filtered.empty:
