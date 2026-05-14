@@ -1,4 +1,5 @@
 import io
+import re
 import pandas as pd
 import streamlit as st
 
@@ -41,8 +42,21 @@ if not output_name.endswith(".xlsx"):
 def parse(raw):
     return [k.strip() for k in raw.split(",") if k.strip()]
 
+def build_pattern(terms, group_digits=6):
+    parts = []
+    for t in terms:
+        escaped = re.escape(t)
+        remaining = group_digits - len(t)
+        if remaining > 0:
+            parts.append(r'\b' + escaped + r'\d{' + str(remaining) + r'}\b')
+        elif remaining == 0:
+            parts.append(r'\b' + escaped + r'\b')
+        else:
+            parts.append(escaped)
+    return "|".join(parts)
+
 def make_mask(df, terms):
-    pattern = "|".join(f"^{t}" for t in terms)
+    pattern = build_pattern(terms)
     return df.apply(
         lambda col: col.astype(str).str.contains(pattern, case=False, na=False, regex=True)
     ).any(axis=1)
@@ -60,7 +74,7 @@ if st.button("Extract", type="primary", disabled=not can_run):
     with st.spinner("Filtering..."):
         if selected_col and selected_col != "— All columns —":
             mask = df[selected_col].astype(str).str.contains(
-                "|".join(f"^{k}" for k in keywords), case=False, na=False, regex=True
+                build_pattern(keywords), case=False, na=False, regex=True
             )
         else:
             mask = make_mask(df, keywords)
