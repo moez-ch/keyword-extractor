@@ -42,7 +42,7 @@ def parse(raw):
     return [k.strip() for k in raw.split(",") if k.strip()]
 
 def make_mask(df, terms):
-    pattern = "|".join(terms)
+    pattern = "|".join(f"^{t}" for t in terms)
     return df.apply(
         lambda col: col.astype(str).str.contains(pattern, case=False, na=False, regex=True)
     ).any(axis=1)
@@ -60,7 +60,7 @@ if st.button("Extract", type="primary", disabled=not can_run):
     with st.spinner("Filtering..."):
         if selected_col and selected_col != "— All columns —":
             mask = df[selected_col].astype(str).str.contains(
-                "|".join(keywords), case=False, na=False, regex=True
+                "|".join(f"^{k}" for k in keywords), case=False, na=False, regex=True
             )
         else:
             mask = make_mask(df, keywords)
